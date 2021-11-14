@@ -56,4 +56,3 @@ For a smaller hobby-like project I would probably go for LibJIT, as it's fairly 
 I don't like the fact that it doesn't support that many architectures, and if I was aiming for a more widely-used but still small software project
 I might go for Lightning. MIR seems to be best suited for larger projects, where there's enough resources to mitigate the slower compilation with some
 kind of hybrid interpreted/compiled system. MIR seems to provide this OOTB, though I don't know what kind of latencies interpreted MIR has at the moment.
-MIR seems to be 
