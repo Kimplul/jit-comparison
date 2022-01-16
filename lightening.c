@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/mman.h>
-#include <lightning.h>
+#include "lightening/lightening.h"
 
-static jit_state_t *_jit;
+static jit_state_t *j;
 
 typedef unsigned long (*loop_jit_t)(unsigned long);
 struct jit_info {
@@ -14,61 +14,40 @@ struct jit_info {
 
 struct jit_info compile()
 {
-	jit_node_t *cond;
-	jit_node_t *jump;
-	jit_node_t *out;
-	jit_node_t *n;
+	jit_pointer_t *cond;
+	jit_reloc_t jump;
+	jit_reloc_t out;
 
-	jit_uint8_t *code = 0;
-	jit_word_t code_size = 0;
+	jit_word_t code_size = 4096;
+	uint8_t *code_base = mmap(NULL, code_size,
+			PROT_EXEC | PROT_READ | PROT_WRITE,
+			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-	loop_jit_t loop = 0;
-
-	_jit = jit_new_state();
-	jit_prolog();
+	init_jit();
+	j = jit_new_state(NULL, NULL);
+	jit_begin(j, code_base, code_size);
+	size_t align = jit_enter_jit_abi(j, 0, 0, 0);
 
 	/* implement */
-	n = jit_arg();
-	jit_movi(JIT_R0, 0); /* sum = 0; */
-	jit_movi(JIT_R1, 0); /* i = 0; */
-	jit_getarg(JIT_R2, n);
-	cond = jit_label();
-	out = jit_bgtr(JIT_R1, JIT_R2); /* i > n => out */
-	jit_addr(JIT_R0, JIT_R0, JIT_R1); /* sum += i */
-	jit_addi(JIT_R1, JIT_R1, 1); /* i += 1 */
-	jump = jit_jmpi();
+	jit_movi(j, JIT_R0, 0); /* sum = 0; */
+	jit_movi(j, JIT_R1, 0); /* i = 0; */
+	jit_load_args_1(j, jit_operand_gpr(JIT_OPERAND_ABI_WORD, JIT_R2));
+	cond = jit_address(j);
+	out = jit_bgtr(j, JIT_R1, JIT_R2); /* i > n => out */
+	jit_addr(j, JIT_R0, JIT_R0, JIT_R1); /* sum += i */
+	jit_addi(j, JIT_R1, JIT_R1, 1); /* i += 1 */
+	jump = jit_jmp(j);
 
-	jit_patch_at(jump, cond);
-	jit_patch(out);
-	jit_retr(JIT_R0); /* return sum; */
+	jit_patch_there(j, jump, cond);
+	jit_patch_here(j, out);
+	jit_leave_jit_abi(j, 0, 0, align);
+	jit_retr(j, JIT_R0); /* return sum; */
 
-	jit_realize();
+	size_t size = 0;
+	void *loop = jit_end(j, &size);
 
-	/* disable external data segment */
-	jit_get_data(NULL, NULL);
-	jit_set_data(NULL, 0, JIT_DISABLE_DATA | JIT_DISABLE_NOTE);
-
-	jit_get_code(&code_size);
-
-	code_size = (code_size + 4095) & - 4096;
-
-	do {
-		code = mmap(NULL, code_size,
-				PROT_EXEC | PROT_READ | PROT_WRITE,
-				MAP_PRIVATE | MAP_ANON, -1, 0);
-
-		jit_set_code(code, code_size);
-
-		if((loop = jit_emit()) == NULL){
-			munmap(code, code_size);
-			code_size += 4096;
-		}
-
-	} while(loop == NULL);
-
-
-	jit_clear_state();
-	jit_destroy_state();
+	//jit_reset(j);
+	jit_destroy_state(j);
 
 	return (struct jit_info){code_size, loop};
 }
@@ -83,7 +62,6 @@ int main(int argc, char *argv[])
 	size_t compile_num = strtoull(argv[1], 0, 0);
 	struct jit_info *info = (struct jit_info *)calloc(sizeof(struct jit_info), compile_num);
 
-	init_jit("loop");
 	clock_t t = clock();
 	for(size_t i = 0; i < compile_num; ++i){
 		info[i] = compile();
@@ -105,8 +83,7 @@ int main(int argc, char *argv[])
 			run_num, run_time_total, result);
 
 	for(size_t i = 0; i < compile_num; ++i)
-		munmap(info[i].func, info[i].code_size);
+		munmap(info[0].func, info[0].code_size);
 
-	finish_jit();
 	return 0;
 }

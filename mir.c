@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
 	MIR_context_t ctx = MIR_init();
 	MIR_gen_init(ctx, 0);
-	MIR_gen_set_optimize_level(ctx, 0, 1);
+	MIR_gen_set_optimize_level(ctx, 0, 0);
 	MIR_link(ctx, MIR_set_gen_interface, NULL);
 	jit_loop_t func = 0;
 
