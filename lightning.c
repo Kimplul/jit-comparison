@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/mman.h>
+
 #include <lightning.h>
 
 static jit_state_t *_jit;
@@ -29,11 +30,13 @@ struct jit_info compile()
 
 	/* implement */
 	n = jit_arg();
+	jit_getarg(JIT_R2, n);
+
 	jit_movi(JIT_R0, 0); /* sum = 0; */
 	jit_movi(JIT_R1, 0); /* i = 0; */
-	jit_getarg(JIT_R2, n);
+
 	cond = jit_label();
-	out = jit_bgtr(JIT_R1, JIT_R2); /* i > n => out */
+	out = jit_bger(JIT_R1, JIT_R2); /* i >= n => out */
 	jit_addr(JIT_R0, JIT_R0, JIT_R1); /* sum += i */
 	jit_addi(JIT_R1, JIT_R1, 1); /* i += 1 */
 	jump = jit_jmpi();
@@ -84,6 +87,7 @@ int main(int argc, char *argv[])
 	struct jit_info *info = (struct jit_info *)calloc(sizeof(struct jit_info), compile_num);
 
 	init_jit("loop");
+
 	clock_t t = clock();
 	for(size_t i = 0; i < compile_num; ++i){
 		info[i] = compile();

@@ -20,7 +20,7 @@ enum ops {
 	LI,
 	ADD,
 	JMP,
-	JGT,
+	JGE,
 	RET
 };
 
@@ -61,9 +61,9 @@ static void compile_jmp(uint16_t o)
 	insert(JMP, 0, o >> 8, o & 0xff);
 }
 
-static void compile_jgt(uint8_t r0, uint8_t r1, uint16_t o)
+static void compile_jge(uint8_t r0, uint8_t r1, uint16_t o)
 {
-	insert(JGT, r0, r1, o & 0xff);
+	insert(JGE, r0, r1, o & 0xff);
 }
 
 static void compile_ret(uint8_t r)
@@ -83,7 +83,7 @@ static void *compile()
 	compile_li(R1, 0); /* sum = 0; */
 	compile_li(R2, 0); /* i = 0 */
 	compile_li(R3, 1); /* temp value for 1 */
-	compile_jgt(R2, R0, 12); /* i > n => out */
+	compile_jge(R2, R0, 12); /* i >= n => out */
 	compile_add(R1, R1, R2); /* sum += i */
 	compile_add(R2, R2, R3); /* i += 1 */
 	compile_jmp(-16);
@@ -117,8 +117,8 @@ top:
 			p += ((int8_t)f1 << 8) + f2;
 			goto top;
 
-		case JGT:
-			if(registers[f0] > registers[f1])
+		case JGE:
+			if(registers[f0] >= registers[f1])
 				p += (int8_t)f2;
 
 			goto top;
@@ -139,8 +139,9 @@ int main(int argc, char *argv[])
 
 	size_t compile_num = strtoull(argv[1], 0, 0);
 
-	clock_t t = clock();
 	void **info = (void *)calloc(sizeof(void *), compile_num);
+
+	clock_t t = clock();
 	for(size_t i = 0; i < compile_num; ++i){
 		info[i] = compile();
 	}

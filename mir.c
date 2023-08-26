@@ -7,7 +7,7 @@
 typedef unsigned long (*jit_loop_t)(unsigned long);
 jit_loop_t compile(MIR_context_t ctx)
 {
-	MIR_module_t m = MIR_new_module(ctx, "m");
+	MIR_new_module(ctx, "m");
 
 	MIR_type_t res_type[1] = {MIR_T_U64};
 	MIR_item_t func = MIR_new_func(ctx, "loop", 1, res_type, 1, MIR_T_U64, "n");
@@ -33,7 +33,7 @@ jit_loop_t compile(MIR_context_t ctx)
 	/* loop top */
 	MIR_append_insn(ctx, func, cond);
 	MIR_append_insn(ctx, func,
-			MIR_new_insn(ctx, MIR_UBGT,
+			MIR_new_insn(ctx, MIR_UBGE,
 				MIR_new_label_op(ctx, out),
 				MIR_new_reg_op(ctx, i),
 				MIR_new_reg_op(ctx, n)));

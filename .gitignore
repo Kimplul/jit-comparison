@@ -1,0 +1,13 @@
+*.o
+mir
+gccjit
+libjit
+lightning
+lightening
+bytecode
+copyjit
+bcgen
+bcode.c
+bcode.h
+!lib/copyjit
+!lib/lightening

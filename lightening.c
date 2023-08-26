@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/mman.h>
-#include "lightening/lightening.h"
+#include "lib/lightening/lightening.h"
 
 static jit_state_t *j;
 
@@ -33,7 +33,7 @@ struct jit_info compile()
 	jit_movi(j, JIT_R1, 0); /* i = 0; */
 	jit_load_args_1(j, jit_operand_gpr(JIT_OPERAND_ABI_WORD, JIT_R2));
 	cond = jit_address(j);
-	out = jit_bgtr(j, JIT_R1, JIT_R2); /* i > n => out */
+	out = jit_bger(j, JIT_R1, JIT_R2); /* i >= n => out */
 	jit_addr(j, JIT_R0, JIT_R0, JIT_R1); /* sum += i */
 	jit_addi(j, JIT_R1, JIT_R1, 1); /* i += 1 */
 	jump = jit_jmp(j);

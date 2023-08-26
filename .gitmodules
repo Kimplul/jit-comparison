@@ -1,0 +1,9 @@
+[submodule "lib/lightening"]
+	path = lib/lightening
+	url = https://gitlab.com/Kimplul/lightening.git
+[submodule "lib/copyjit"]
+	path = lib/copyjit
+	url = https://github.com/Kimplul/copyjit.git
+[submodule "lib/bcgen"]
+	path = lib/bcgen
+	url = https://github.com/Kimplul/bcgen.git

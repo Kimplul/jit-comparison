@@ -29,7 +29,7 @@ jit_function_t compile(jit_context_t context)
 
 	jit_insn_label(func, &cond);
 
-	temp = jit_insn_le(func, i, n);
+	temp = jit_insn_lt(func, i, n);
 	jit_insn_branch_if_not(func, temp, &out);
 
 	/* body */

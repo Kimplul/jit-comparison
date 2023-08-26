@@ -1,8 +1,11 @@
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <libgccjit.h>
 
-void create_code(gcc_jit_context *ctxt)
+typedef unsigned long (*loop_test_t) (unsigned long);
+
+void compile(gcc_jit_context *ctxt)
 {
 	/*
 	 * ulong loop_test(ulong n)
@@ -57,9 +60,9 @@ void create_code(gcc_jit_context *ctxt)
 	/* connect initial block to condition block */
 	gcc_jit_block_end_with_jump(b_initial, NULL, b_loop_cond);
 
-	/* i <= n */
+	/* i < n */
 	gcc_jit_block_end_with_conditional(b_loop_cond, NULL,
-			gcc_jit_context_new_comparison(ctxt, NULL, GCC_JIT_COMPARISON_LE,
+			gcc_jit_context_new_comparison(ctxt, NULL, GCC_JIT_COMPARISON_LT,
 				gcc_jit_lvalue_as_rvalue(i),
 				gcc_jit_param_as_rvalue(n)),
 			b_loop_body,
@@ -84,64 +87,66 @@ void create_code(gcc_jit_context *ctxt)
 }
 
 int main(int argc, char **argv){
+	if (argc != 3) {
+		fprintf(stderr, "Usage: %s compile_num loop_num\n", argv[0]);
+		return -1;
+	}
+
 	gcc_jit_context *ctxt = NULL;
-	gcc_jit_result *result = NULL;
 
 	ctxt = gcc_jit_context_acquire();
 	gcc_jit_context_set_int_option(ctxt, GCC_JIT_INT_OPTION_OPTIMIZATION_LEVEL, 2);
+	gcc_jit_context_add_driver_option(ctxt, "-march=native");
 
-	gcc_jit_timer *timer = gcc_jit_timer_new();
-	gcc_jit_context_set_timer(ctxt, timer);
+	size_t compile_num = strtoull(argv[1], 0, 0);
+	loop_test_t *loop_tests = calloc(sizeof(loop_test_t), compile_num);
+	gcc_jit_result **results = calloc(sizeof(gcc_jit_result *), compile_num);
 
-	size_t loop = strtoull(argv[1], 0, 0);
-	for(size_t i = 0; i < loop; ++i){
+	clock_t t = clock();
+	for(size_t i = 0; i < compile_num; ++i){
 		gcc_jit_context *child_ctxt = NULL;
-		gcc_jit_timer_push(timer, "child_context");
 		child_ctxt = gcc_jit_context_new_child_context(ctxt);
-		gcc_jit_context_set_timer(child_ctxt, timer);
-		gcc_jit_timer_pop(timer, "child_context");
 
 		if(!child_ctxt){
 			fprintf(stderr, "NULL ctxt");
 			goto error;
 		}
 
-		gcc_jit_timer_push(timer, "create_code");
-		create_code(child_ctxt);
-		gcc_jit_timer_pop(timer, "create_code");
+		compile(child_ctxt);
+		results[i] = gcc_jit_context_compile(child_ctxt);
 
-		gcc_jit_timer_push(timer, "code_compile");
-		result = gcc_jit_context_compile(child_ctxt);
-		gcc_jit_timer_pop(timer, "code_compile");
-
-		if(!result){
+		if(!results[i]){
 			fprintf(stderr, "NULL result");
 			goto error;
 		}
 
-		typedef unsigned long (*loop_test_t) (unsigned long);
-		gcc_jit_timer_push(timer, "result_get");
-		loop_test_t loop_test =
-		(loop_test_t)gcc_jit_result_get_code(result, "loop_test");
-		gcc_jit_timer_pop(timer, "result_get");
+		loop_tests[i] =
+		(loop_test_t)gcc_jit_result_get_code(results[i], "loop_test");
 
-		if(!loop_test){
+		if(!loop_tests[i]){
 			fprintf(stderr, "NULL loop_test");
 			goto error;
 		}
 
 error:
-		gcc_jit_timer_push(timer, "context_release");
 		gcc_jit_context_release(child_ctxt);
-		gcc_jit_timer_pop(timer, "context_release");
-
-		gcc_jit_timer_push(timer, "result_release");
-		gcc_jit_result_release(result);
-		gcc_jit_timer_pop(timer, "result_release");
 
 	}
+	t = clock() - t;
 
-	gcc_jit_timer_print(timer, stderr);
-	gcc_jit_timer_release(timer);
+	double compile_time_total = ((double)t) / CLOCKS_PER_SEC;
+	double compile_time_one = compile_time_total / compile_num;
+	printf("Compilation for n = %lu took %fs (1/%f).\n",
+			compile_num, compile_time_total, compile_time_one);
+
+	size_t run_num = strtoull(argv[2], 0, 0);
+	t = clock();
+	unsigned long result = loop_tests[0](run_num);
+	t = clock() - t;
+
+	double run_time_total = ((double)t) / CLOCKS_PER_SEC;
+	printf("Running loop for n = %lu took %fs with res %lu\n",
+			run_num, run_time_total, result);
+
 	return 0;
 }
