@@ -15,8 +15,8 @@ Additionally, some of my projects:
 + BCGen bytecode generator
 + Custom bytecode
 
-# Performance
-All tests were to compile the C function
+# Performance/results
+Tests are split between compiling the C functions
 ```
 unsigned long loop(unsigned long n)
 {
@@ -28,24 +28,54 @@ unsigned long loop(unsigned long n)
 }
 ```
 
+and
+
+```
+unsigned long fib(unsigned long n)
+{
+  if (n <= 2)
+    return 1;
+
+  return fib(n - 1) + fib(n - 2);
+}
+```
+
 `N` number of times, and run the compiled code with some `n`.
-All tests (except GCCJIT) were run with `N = 1 000 000` and `n = 1 000 000 000`.
+All tests (except GCCJIT) were run with `N = 1 000 000` and `n = 1 000 000 000` for `loop`
+and `N = 1 000 000` and `n = 42` for `fib`.
+
 GCCJIT was so slow that I decided to limit it to only `N = 1 000` and the final
 value in the table below is `time(N) * 1000`.
 
-| framework     | compilation time (s) | code execution (s) |
-|---------------|----------------------|--------------------|
-| GCCJIT        | 7602*                | 0.217              |
-| GNU Lightning | 4.224                | 0.217              |
-| lightening    | 1.495                | 0.217              |
-| LibJIT        | 5.788                | 0.215              |
-| MIR           | 18.614               | 0.218              |
-| copyjit       | 1.366                | 0.430              |
-| bcgen         | 0.108                | 1.721              |
-| bytecode      | 0.773                | 5.598              |
+`loop`:
+| framework     | compilation time (s) | runtime (s) |
+|---------------|----------------------|-------------|
+| GCCJIT        | 7602*                | 0.217       |
+| GNU Lightning | 4.224                | 0.217       |
+| lightening    | 1.495                | 0.217       |
+| LibJIT        | 5.788                | 0.215       |
+| MIR           | 18.614               | 0.218       |
+| copyjit       | 1.366                | 0.430       |
+| bcgen         | 0.108                | 1.721       |
+| bytecode      | 0.773                | 5.598       |
 
 For reference, the equivalent `C` code compiled with '-O0' executes
 in 0.701s and with '-O2' in 0.223s.
+
+`fib`:
+| framework     | compilation time (s) | runtime (s) |
+|---------------|----------------------|-------------|
+| GCCJIT        | 26418*               | 0.233       |
+| GNU Lightning | TODO                 | TODO        |
+| lightening    | 3.491                | 0.595       |
+| LibJIT        | TODO                 | TODO        |
+| MIR           | TODO                 | TODO        |
+| copyjit       | 3.247                | 0.997       |
+| bcgen         | 0.328                | 1.943       |
+| bytecode      | TODO                 | TODO        |
+
+For reference, the equivalent `C` code compiled with '-O0' executes
+in 0.667s and with '-O2' in 0.240s.
 
 # Conclusions
 
