@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/mman.h>
-#include "lib/copyjit/src/copyjit.h"
+#include "../lib/copyjit/src/copyjit.h"
 
 void compile(ctx_t *ctx)
 {
@@ -56,8 +56,10 @@ int main(int argc, char *argv[])
 	printf("Running loop for n = %lu took %fs with res %lu\n", 
 			run_num, run_time_total, result);
 
+	/*
 	for(size_t i = 0; i < compile_num; ++i)
 		compile_destroy(&ctxs[i]);
+		*/
 
 	return 0;
 }

@@ -69,7 +69,7 @@ be more complicated and more difficult to inline, leading to the compiler
 choosing to output calls rather than inlining them. GNU Lightning and
 lightening share a lot of code, but lightening is generally compiled
 alongside whatever project it is inteded to be included in whereas GNU Lightning
-is generally distributed as a library, potentially disallowing some inlining
+is generally distributed as a separate library, potentially disallowing some inlining
 optimizations. Although it should be noted that lightening doesn't have a
 separate compile phase, whereas GNU lightning does. Especially with link-time
 optimizations, the best way to increase compilation speed seems to be trying to
@@ -79,6 +79,8 @@ more parts.
 
 Testing methodology could probably be improved, for example with randomized
 data layouts and so on. The results should be taken with a grain of salt.
+
+The tests were run on an AMD Ryzen 5 5600, your results will likely vary.
 
 # Missing comparisons
 
