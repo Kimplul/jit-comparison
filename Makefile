@@ -3,5 +3,5 @@ all:
 	$(MAKE) -C fib
 
 .DEFAULT:
-	$(MAKE) -C loop
-	$(MAKE) -C fib
+	$(MAKE) -C loop $<
+	$(MAKE) -C fib $<
